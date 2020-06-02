@@ -31,7 +31,7 @@ handle_call(getVal, _From, Val) ->
 
 
 handle_cast({setEmptyMaze, Height, Width}, _OldMaze) ->
-  XD= maze_generator:createMaze(Height, Width),
+  {XD,_}= maze_generator:createMaze(Height, Width),
   XD2 = XD#maze{walls = maps:put({1,1}, true, XD#maze.walls)},
   {noreply,XD2}.
 
