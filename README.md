@@ -7,7 +7,7 @@
 
 Small project showcasing usage of jinterface - library made for connecting with erlang application with java
 
-## [Maze api](./maze_api)
+## [Maze api](./maze_api/apps/maze_api/src)
 
 Standalone erlang gen_server application with three functions:
 
@@ -26,6 +26,6 @@ cd maze_api
 rebar3 shell --sname apiNode --setcookie erljava
 ```
 
-## [Maze client](./maze_client)
+## [Maze client](./maze_client/src/main/java/codes/wokstym/mazeClient)
 
 Java application responsible for communicating with erlang server, parse, interprete data to POJO and showcase it using JavaFx library
