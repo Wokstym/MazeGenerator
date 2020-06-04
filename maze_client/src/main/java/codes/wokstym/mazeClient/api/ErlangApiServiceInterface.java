@@ -8,10 +8,12 @@ import com.ericsson.otp.erlang.OtpErlangRangeException;
 
 import java.io.IOException;
 
-public interface MazeApiInterface {
+public interface ErlangApiServiceInterface {
 
 
     Maze getNewMaze() throws OtpErlangDecodeException, OtpErlangExit, OtpAuthException, IOException, OtpErlangRangeException;
+
     void createEmptyMaze(int Height, int Width) throws OtpErlangDecodeException, OtpErlangExit, OtpAuthException, IOException;
+
     Maze step(Maze maze) throws OtpErlangDecodeException, OtpErlangExit, IOException, OtpAuthException;
 }

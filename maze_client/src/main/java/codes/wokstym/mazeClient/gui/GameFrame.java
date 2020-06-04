@@ -1,7 +1,7 @@
 package codes.wokstym.mazeClient.gui;
 
-import codes.wokstym.mazeClient.api.MazeApi;
-import codes.wokstym.mazeClient.api.MazeApiInterface;
+import codes.wokstym.mazeClient.api.ErlangApiService;
+import codes.wokstym.mazeClient.api.ErlangApiServiceInterface;
 import codes.wokstym.mazeClient.MazeStructure.Maze;
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -27,8 +27,7 @@ public class GameFrame extends Application {
     public void start(Stage stage) throws Exception {
 
 
-
-        MazeApiInterface mazeApi = new MazeApi("erljava", "apiNode");
+        ErlangApiServiceInterface mazeApi = new ErlangApiService("erljava", "apiNode");
         mazeApi.createEmptyMaze(MAZE_HEIGHT, MAZE_WIDTH);
         AtomicReference<Maze> maze = new AtomicReference<>(mazeApi.getNewMaze());
 

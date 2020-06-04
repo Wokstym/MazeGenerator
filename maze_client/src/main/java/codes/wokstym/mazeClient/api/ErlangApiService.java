@@ -1,6 +1,5 @@
 package codes.wokstym.mazeClient.api;
 
-
 import codes.wokstym.mazeClient.MazeStructure.Maze;
 import codes.wokstym.mazeClient.MazeStructure.Position;
 import com.ericsson.otp.erlang.*;
@@ -10,12 +9,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-public class MazeApi implements MazeApiInterface {
+public class ErlangApiService implements ErlangApiServiceInterface {
 
     private final OtpConnection connection;
     private boolean isFinished = false;
 
-    public MazeApi(String cookie, String serverNodeName) throws IOException, OtpAuthException {
+    public ErlangApiService(String cookie, String serverNodeName) throws IOException, OtpAuthException {
         OtpSelf client = new OtpSelf("mazeClientNode", cookie);
         OtpPeer server = new OtpPeer(serverNodeName);
         this.connection = client.connect(server);
@@ -40,7 +39,6 @@ public class MazeApi implements MazeApiInterface {
         return new Maze(width, height, positionHashSet);
     }
 
-
     public void createEmptyMaze(int Height, int Width) throws OtpErlangDecodeException, OtpErlangExit, OtpAuthException, IOException {
 
         OtpErlangObject[] args = new OtpErlangObject[]{
@@ -54,7 +52,7 @@ public class MazeApi implements MazeApiInterface {
     }
 
     public Maze step(Maze maze) throws OtpErlangDecodeException, OtpErlangExit, IOException, OtpAuthException {
-        if( this.isFinished)
+        if (this.isFinished)
             return maze;
 
         connection.sendRPC("maze_api_gen_server", "step", new OtpErlangObject[]{});
@@ -62,7 +60,7 @@ public class MazeApi implements MazeApiInterface {
         OtpErlangTuple responseTuple = (OtpErlangTuple) response.elementAt(1);
         if (responseTuple.elementAt(0).toString().equals("finished_generation")) {
             System.out.println("Finished generation");
-            this.isFinished=true;
+            this.isFinished = true;
             return maze;
         }
 
