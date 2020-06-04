@@ -1,4 +1,4 @@
-package codes.wokstym.mazeClient.utils;
+package codes.wokstym.mazeClient.MazeStructure;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

@@ -11,27 +11,42 @@
 -author("grzeg").
 
 %% API
--export([start_link/0, getMonitor/0, handle_call/3, init/1, handle_cast/2, createEmptyMaze/2]).
+-export([start_link/0, getMaze/0, handle_call/3, init/1, handle_cast/2, createEmptyMaze/2, step/0]).
 -record(maze, {height, width, walls}).
 
 start_link() ->
-  gen_server:start_link({local, ?MODULE}, ?MODULE, "No maze created", []).
+  gen_server:start_link({local, ?MODULE}, ?MODULE, no_maze_state, []).
 init(Maze) ->
   {ok, Maze}.
 
-createEmptyMaze(Height, Width) -> gen_server:cast(?MODULE, {setEmptyMaze, Height, Width}).
-getMonitor() -> gen_server:call(?MODULE, getVal).
+%%%===================================================================
+%%% API
+%%%===================================================================
+
+createEmptyMaze(Height, Width) -> gen_server:cast(?MODULE, {createEmptyMaze, Height, Width}).
+getMaze() -> gen_server:call(?MODULE, getMaze).
+step() -> gen_server:call(?MODULE, step).
+
+
+%%%===================================================================
+%%% Handlers
+%%%===================================================================
+
+handle_call(step, _From, no_maze_state) ->
+  {reply, no_maze_state, no_maze_state};
+handle_call(step, _From, MazeStructure) ->
+  {Maze_finished_or_not_atom, {NewMaze, NewWalls}} = maze_generator:step(MazeStructure),
+  {reply,  {Maze_finished_or_not_atom, NewMaze},  {Maze_finished_or_not_atom, {NewMaze, NewWalls}}};
+
+handle_call(getMaze, _From, no_maze_state) ->
+  {reply, no_maze_state, no_maze_state};
+handle_call(getMaze, _From, {Maze_finished_or_not_atom, {Maze, Walls}}) ->
+  {reply,  {Maze_finished_or_not_atom, Maze}, {Maze_finished_or_not_atom, {Maze, Walls}}}.
 
 
 
+handle_cast({createEmptyMaze, Height, Width}, _OldMaze) ->
+  MazeStructure = maze_generator:createMaze(Height, Width),
+  {noreply, MazeStructure}.
 
-handle_call(getVal, _From, Val) ->
-  erlang:display(Val),
-  {reply, Val, Val}.
-
-
-handle_cast({setEmptyMaze, Height, Width}, _OldMaze) ->
-  {XD,_}= maze_generator:createMaze(Height, Width),
-  XD2 = XD#maze{walls = maps:put({1,1}, true, XD#maze.walls)},
-  {noreply,XD2}.
 

@@ -3,8 +3,8 @@ maze_api
 
 An OTP application
 
-Run 
+Build
 -----
-```bash
+```shell
 rebar3 shell --sname apiNode --setcookie erljava
 ```

@@ -1,8 +1,8 @@
 package codes.wokstym.mazeClient.api;
 
 
-import codes.wokstym.mazeClient.utils.Maze;
-import codes.wokstym.mazeClient.utils.Position;
+import codes.wokstym.mazeClient.MazeStructure.Maze;
+import codes.wokstym.mazeClient.MazeStructure.Position;
 import com.ericsson.otp.erlang.*;
 
 import java.io.IOException;
@@ -13,6 +13,7 @@ import java.util.stream.Collectors;
 public class MazeApi implements MazeApiInterface {
 
     private final OtpConnection connection;
+    private boolean isFinished = false;
 
     public MazeApi(String cookie, String serverNodeName) throws IOException, OtpAuthException {
         OtpSelf client = new OtpSelf("mazeClientNode", cookie);
@@ -20,23 +21,19 @@ public class MazeApi implements MazeApiInterface {
         this.connection = client.connect(server);
     }
 
-    public Maze updateMaze(Maze maze) throws Exception {
 
-        OtpErlangTuple resultTuple = getMazeData();
-        OtpErlangMap positions = (OtpErlangMap) resultTuple.elementAt(3);
-        List<Position> positionHashSet = parseErlMap(positions);
+    public Maze getNewMaze() throws OtpErlangDecodeException, OtpErlangExit, OtpAuthException, IOException, OtpErlangRangeException {
+        connection.sendRPC("maze_api_gen_server", "getMaze", new OtpErlangObject[]{});
 
-        maze.setPositions(positionHashSet);
-        return maze;
+        OtpErlangTuple response = (OtpErlangTuple) connection.receiveMsg().getMsg();
+        OtpErlangTuple responseTuple = (OtpErlangTuple) response.elementAt(1);
+        OtpErlangObject responseVal = responseTuple.elementAt(1);
+        OtpErlangTuple resultTuple = (OtpErlangTuple) responseVal;
 
-    }
+        checkIfIsMaze(resultTuple);
 
-    public Maze getNewMaze() throws Exception {
-
-        OtpErlangTuple resultTuple = getMazeData();
-
-        int width = ((OtpErlangLong) resultTuple.elementAt(1)).intValue();
-        int height = ((OtpErlangLong) resultTuple.elementAt(2)).intValue();
+        int width = ((OtpErlangLong) resultTuple.elementAt(2)).intValue();
+        int height = ((OtpErlangLong) resultTuple.elementAt(1)).intValue();
         OtpErlangMap positions = (OtpErlangMap) resultTuple.elementAt(3);
 
         List<Position> positionHashSet = parseErlMap(positions);
@@ -44,7 +41,7 @@ public class MazeApi implements MazeApiInterface {
     }
 
 
-    public void createEmptyMaze(int Height, int Width) throws Exception {
+    public void createEmptyMaze(int Height, int Width) throws OtpErlangDecodeException, OtpErlangExit, OtpAuthException, IOException {
 
         OtpErlangObject[] args = new OtpErlangObject[]{
                 new OtpErlangInt(Height),
@@ -56,16 +53,27 @@ public class MazeApi implements MazeApiInterface {
         checkIfResponseIsOk();
     }
 
-    private OtpErlangTuple getMazeData() throws Exception {
-        connection.sendRPC("maze_api_gen_server", "getMonitor", new OtpErlangObject[]{});
+    public Maze step(Maze maze) throws OtpErlangDecodeException, OtpErlangExit, IOException, OtpAuthException {
+        if( this.isFinished)
+            return maze;
 
+        connection.sendRPC("maze_api_gen_server", "step", new OtpErlangObject[]{});
         OtpErlangTuple response = (OtpErlangTuple) connection.receiveMsg().getMsg();
-        System.out.println(response);
-        OtpErlangObject responseVal = response.elementAt(1);
-        OtpErlangTuple resultTuple = (OtpErlangTuple) responseVal;
+        OtpErlangTuple responseTuple = (OtpErlangTuple) response.elementAt(1);
+        if (responseTuple.elementAt(0).toString().equals("finished_generation")) {
+            System.out.println("Finished generation");
+            this.isFinished=true;
+            return maze;
+        }
 
+        OtpErlangTuple resultTuple = (OtpErlangTuple) responseTuple.elementAt(1);
         checkIfIsMaze(resultTuple);
-        return resultTuple;
+        OtpErlangMap positions = (OtpErlangMap) resultTuple.elementAt(3);
+
+        List<Position> positionHashSet = parseErlMap(positions);
+
+        maze.setPositions(positionHashSet);
+        return maze;
     }
 
 
@@ -90,23 +98,23 @@ public class MazeApi implements MazeApiInterface {
     }
 
 
-    private void checkIfResponseIsOk() throws Exception {
+    private void checkIfResponseIsOk() throws OtpErlangExit, IOException, OtpAuthException, OtpErlangDecodeException {
         OtpErlangTuple responseTuple = (OtpErlangTuple) connection.receiveMsg().getMsg();
         OtpErlangObject responseVal = responseTuple.elementAt(1);
-        if (!((responseVal instanceof OtpErlangAtom) &&
-                ((OtpErlangAtom) responseVal).atomValue().equals("ok"))) {
-            throw new Exception("server returned error: " + responseVal);
-        }
+        if (!(responseVal instanceof OtpErlangAtom &&
+                ((OtpErlangAtom) responseVal).atomValue().equals("ok")))
+            throw new OtpErlangDecodeException("Server returned error: " + responseVal);
+
     }
 
-    private void checkIfIsMaze(OtpErlangTuple resultTuple) throws Exception {
+    private void checkIfIsMaze(OtpErlangTuple resultTuple) throws OtpErlangDecodeException {
 
         OtpErlangAtom resultType = (OtpErlangAtom) resultTuple.elementAt(0);
         if (!(resultType
                 .atomValue()
                 .equals("maze") &&
                 resultTuple.elements().length == 4)) {
-            throw new Exception("server returned error: " + resultTuple);
+            throw new OtpErlangDecodeException("Server returned error: " + resultTuple);
         }
     }
 }

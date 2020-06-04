@@ -2,57 +2,59 @@ package codes.wokstym.mazeClient.gui;
 
 import codes.wokstym.mazeClient.api.MazeApi;
 import codes.wokstym.mazeClient.api.MazeApiInterface;
-import codes.wokstym.mazeClient.utils.Maze;
+import codes.wokstym.mazeClient.MazeStructure.Maze;
 import javafx.application.Application;
 import javafx.application.Platform;
-import javafx.scene.input.KeyCode;
 import javafx.scene.layout.Pane;
 import javafx.stage.Stage;
 
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class GameFrame extends Application {
 
     static final int PIXEL_SIZE = 8;
-    static final int FREQUENCY = 15;
+    static final int FREQUENCY = 144;
+    static final int MAZE_HEIGHT = 81;
+    static final int MAZE_WIDTH = 81;
 
     public static void main(String[] args) {
         launch(args);
     }
 
-    /**
-     * Main function for setting basic settings, declaring key event on Enter
-     * and starting application timer
-     */
     @Override
     public void start(Stage stage) throws Exception {
 
 
 
         MazeApiInterface mazeApi = new MazeApi("erljava", "apiNode");
-//        mazeApi.createEmptyMaze(100, 100);
-        Maze maze = mazeApi.getNewMaze();
+        mazeApi.createEmptyMaze(MAZE_HEIGHT, MAZE_WIDTH);
+        AtomicReference<Maze> maze = new AtomicReference<>(mazeApi.getNewMaze());
+
 
         stage.setTitle("Maze Generator");
         stage.setResizable(false);
         stage.setOnCloseRequest(event -> Platform.exit());
 
 
-        int stageHeight = maze.height * PIXEL_SIZE;
-        int stageWidth = maze.width * PIXEL_SIZE;
+        int stageHeight = maze.get().height * PIXEL_SIZE;
+        int stageWidth = maze.get().width * PIXEL_SIZE;
 
         Pane rootNode = new Pane();
-        GameScene gameScene = new GameScene(rootNode, stageHeight, stageWidth, maze.getPositions());
+        GameScene gameScene = new GameScene(rootNode, stageHeight, stageWidth, maze.get().getPositions());
         stage.setScene(gameScene);
         stage.show();
-        System.out.println(gameScene.getRectangles());
 
-        new Timer().scheduleAtFixedRate(new TimerTask() {
+        new Timer().schedule(new TimerTask() {
             public void run() {
                 Platform.runLater(() -> {
-                   /* boardOperator.tick();
-                    gameScene.refreshScene(boardOperator.getCurrentPatternBoard().getAllCells());*/
+                    try {
+                        maze.set(mazeApi.step(maze.get()));
+                        gameScene.refreshScene(maze.get().getPositions());
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
                 });
             }
         }, 0, 1000 / FREQUENCY);
